@@ -1,5 +1,8 @@
 package com.example.samil_delacruz_ap2_p2.di
 
+import com.example.samil_delacruz_ap2_p2.data.remote.api.GastosApi
+import com.example.samil_delacruz_ap2_p2.data.repository.GastosRepositoryImpl
+import com.example.samil_delacruz_ap2_p2.domain.repository.GastosRepository
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -11,12 +14,11 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
 
-
 @Module
 @InstallIn(SingletonComponent::class)
 object ApiModule {
 
-    private const val BASE_URL = ""
+    private const val BASE_URL = "https://api-2026-h7eddqgydxc0fmau.eastus2-01.azurewebsites.net/"
 
     @Provides
     @Singleton
@@ -39,13 +41,13 @@ object ApiModule {
             .client(okHttpClient)
             .build()
 
-   /* @Provides
+    @Provides
     @Singleton
-    fun provideApiService(retrofit: Retrofit): ApiServices =
-        retrofit.create(services::class.java)
+    fun provideApiGastoService(retrofit: Retrofit): GastosApi =
+        retrofit.create(GastosApi::class.java)
 
     @Provides
     @Singleton
-    fun provideRepository(apiService: ): Repository =
-      RepositoryImpl(apiService)*/
+    fun provideGastoRepository(apiService: GastosApi): GastosRepository =
+        GastosRepositoryImpl(apiService)
 }
