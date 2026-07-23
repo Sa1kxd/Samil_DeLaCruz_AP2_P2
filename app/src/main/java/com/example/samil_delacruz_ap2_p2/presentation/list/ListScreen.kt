@@ -5,8 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,82 +14,93 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samil_delacruz_ap2_p2.data.remote.dto.GastoResponse
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EntidadListScreen(
-    viewModel: EntidadListViewModel = hiltViewModel(),
-    onItemClick: (Int) -> Unit
+fun GastoListScreen(
+    viewModel: ListViewModel = hiltViewModel(),
+    onAddGasto: () -> Unit,
+    onEditGasto: (Int) -> Unit
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("List") })
+            TopAppBar(title = { Text("Lista de Gastos") })
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAddGasto) {
+                Icon(Icons.Default.Add, contentDescription = "Agregar Gasto")
+            }
         }
     ) { padding ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = { viewModel.onEvent(EntidadListUiEvent.OnSearchQueryChange(it)) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Search...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
-                trailingIcon = {
-                    if (state.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.onEvent(EntidadListUiEvent.OnSearchQueryChange("")) }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear Icon")
-                        }
-                    }
-                },
-                singleLine = true
-            )
-
-            if (state.errorMessage != null) {
-                Text(
-                    text = state.errorMessage!!,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            if (state.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
+                }
+            } else if (uiState.error != null) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = uiState.error!!, color = MaterialTheme.colorScheme.error)
+                    Button(onClick = { viewModel.loadGastos() }) {
+                        Text("Reintentar")
+                    }
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(state.filteredItems) { item ->
-                        ElevatedCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onItemClick(item.id) }
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = item.name,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = item.detail,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
+                    items(uiState.gastos) { gasto ->
+                        GastoItem(gasto = gasto, onClick = { onEditGasto(gasto.gastoId) })
                     }
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Conteo: ${uiState.gastos.size}")
+                    val total = uiState.gastos.sumOf { it.monto }
+                    Text(text = "Total: $${total}")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GastoItem(gasto: GastoResponse, onClick: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = "ID: ${gasto.gastoId}", style = MaterialTheme.typography.labelSmall)
+                Text(text = gasto.fecha, style = MaterialTheme.typography.labelSmall)
+            }
+            Text(text = gasto.suplidor, style = MaterialTheme.typography.titleMedium)
+            Text(text = "Monto: $${gasto.monto}", style = MaterialTheme.typography.bodyLarge)
+            if (!gasto.ncf.isNullOrBlank()){
+                Text(text = "NCF: ${gasto.ncf}", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
